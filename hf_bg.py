@@ -32,4 +32,4 @@ if __name__ == "__main__":
     keyword = input("Please input the keyword for the character: ")
     background = generate_character_background(keyword)
     print("Generated character background:")
-    print(background)
+    print(background) 
