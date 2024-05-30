@@ -43,25 +43,62 @@ class DiceRollWithModifier(DiceRoll):
             tuple: Total points, list of individual dice rolls, and modifier.
         """
         rolls = super().roll()
-        total_points = sum(rolls)
-        total_points += self.modifier
+        total_points = sum(rolls) + self.modifier
         return total_points, rolls, self.modifier
 
-# Usage
-input_str = "2d20+1"
-match = re.match(r"([1-9][0-9]*)(d)([1-9][0-9]*)(([-+])([0-9]+))?", input_str)
-if match:
-    num_dice = int(match.group(1))
-    num_sides = int(match.group(3))
-    modifier = int(match.group(6)) if match.group(6) else 0
+def skill_opposed(input_str):
+    match = re.search(r"(\d+)$", input_str.strip())
+    return int(match.group(1)) if match else 0
 
-    if modifier:
-        roller = DiceRollWithModifier(num_dice, num_sides, modifier)
-        total_points, rolls, modifier = roller.roll()
-    else:
-        roller = DiceRoll(num_dice, num_sides)
-        rolls = roller.roll()
-        total_points = sum(rolls)
-    print(total_points, rolls, modifier)
-else:
-    print("Invalid input format")
+def match_main(input_str):
+    return_data = {}
+    match_str = r"(\d+)d(\d+)([+-]\d+)?"
+    match = re.match(match_str, input_str)
+    
+    if match:
+        num_dice = int(match.group(1))
+        num_sides = int(match.group(2))
+        modifier = int(match.group(3)) if match.group(3) else 0
+        max_point = num_dice * num_sides + modifier
+
+        if modifier:
+            roller = DiceRollWithModifier(num_dice, num_sides, modifier)
+            total_points, rolls, modifier = roller.roll()
+            return_data["modifier"] = modifier
+        else:
+            roller = DiceRoll(num_dice, num_sides)
+            rolls = roller.roll()
+            total_points = sum(rolls)
+
+        return_data["total_points"] = total_points
+        return_data["rolls"] = rolls
+
+    skill_opposed_int = skill_opposed(input_str)
+    if skill_opposed_int:
+        if "coc" in input_str.lower():
+            if total_points <= skill_opposed_int:
+                if total_points == 1:
+                    return_data["result"] = "大成功"
+                elif total_points <= skill_opposed_int / 5:
+                    return_data["result"] = "成功 extreme"
+                elif total_points <= skill_opposed_int / 2:
+                    return_data["result"] = "成功 hard"
+                else:
+                    return_data["result"] = "成功 regular"
+            elif total_points > skill_opposed_int:
+                if total_points == max_point:
+                    return_data["result"] = "大失敗"
+                else:
+                    return_data["result"] = "失敗"
+        elif "dnd" in input_str.lower():
+            if total_points >= skill_opposed_int:
+                return_data["result"] = "成功"
+            else:
+                return_data["result"] = "失敗"
+    
+    return return_data
+
+# Example usage:
+input_str = "2d20+5 coc 30"
+result = match_main(input_str)
+print(result)
